@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LFA Reader - Bluetooth</title>
+    <style>
+        body {
+            background-color: #F5F5F5;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        .data-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #FFF;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .data-item {
+            flex: 1 1 45%;
+            max-width: 45%;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .data-item h2 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .data-item p {
+            font-size: 36px;
+            font-weight: bold;
+            color: #6eb7ff;
+        }
+        .data-head {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 20px;
+            padding: 15px;
+            background-color: #FFF;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            display: inline-block;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        /* Media Queries */
+        @media (max-width: 768px) {
+            .data-item {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+            .data-item p {
+                font-size: 28px;
+            }
+            .data-head {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="data-head">LFA Reader - Bluetooth</div>
+    <div class="data-container">
+        <div class="data-item">
+            <h2>Red</h2>
+            <p id="Red">0</p>
+        </div>
+        <div class="data-item">
+            <h2>Blue</h2>
+            <p id="Blue">0</p>
+        </div>
+        <div class="data-item">
+            <h2>Green</h2>
+            <p id="Green">0</p>
+        </div>
+        <div class="data-item">
+            <h2>Detected Color</h2>
+            <p id="Color_detected">Indefinido</p>
+        </div>
+        <div class="data-item">
+            <h2>Lux</h2>
+            <p id="Lux">0</p>
+        </div>
+    </div>
+
+    <button onclick="connectToESP32()">Conectar Bluetooth</button>
+
+    <script>
+        let bleServer, bleService, bleCharacteristic;
+
+        async function connectToESP32() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['12345678-1234-5678-1234-56789abcdef0']
+                });
+
+                bleServer = await device.gatt.connect();
+                bleService = await bleServer.getPrimaryService('12345678-1234-5678-1234-56789abcdef0');
+                bleCharacteristic = await bleService.getCharacteristic('abcdef01-1234-5678-1234-56789abcdef0');
+
+                bleCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+                await bleCharacteristic.startNotifications();
+                console.log("Conectado al ESP32");
+
+            } catch (error) {
+                console.error("Error conectando:", error);
+            }
+        }
+
+        function handleData(event) {
+            const value = new TextDecoder().decode(event.target.value);
+            try {
+                const data = JSON.parse(value);
+                document.getElementById("Red").innerText = data.Rojo;
+                document.getElementById("Blue").innerText = data.Azul;
+                document.getElementById("Green").innerText = data.Verde;
+                document.getElementById("Color_detected").innerText = data.Color_detectado;
+                document.getElementById("Lux").innerText = data.Lux;
+            } catch (e) {
+                console.error("Error parsing data:", e);
+            }
+        }
+    </script>
+</body>
+</html>
